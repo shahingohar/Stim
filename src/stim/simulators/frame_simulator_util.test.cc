@@ -16,6 +16,7 @@
 
 #include "gtest/gtest.h"
 
+#include "stim/dem/detector_error_model.h"
 #include "stim/mem/simd_word.test.h"
 #include "stim/simulators/frame_simulator.h"
 #include "stim/util_bot/test_util.test.h"
@@ -472,3 +473,32 @@ TEST_EACH_WORD_SIZE_W(DetectionSimulator, obs_data, {
         ASSERT_EQ(obs_saved[k], 0x3);
     }
 })
+
+TEST_EACH_WORD_SIZE_W(FrameSimulatorUtil, sample_batch_detection_events_dem_basic_probabilities, {
+    auto dem = DetectorErrorModel(R"DEM(
+        error(0) D0
+        error(0.25) D1 L0
+        error(0.5) D2
+        error(0.75) D3
+        error(1) D4 ^ D5
+    )DEM");
+    auto rng = INDEPENDENT_TEST_RNG();
+    for (size_t k = 0; k < 2; k++) {
+        auto result = sample_batch_detection_events<W>(dem, 1000, rng);
+        const auto &dets = result.first;
+        const auto &obs = result.second;
+
+        ASSERT_EQ(dets[0].popcnt(), 0);
+        ASSERT_GT(dets[1].popcnt(), 0);
+        ASSERT_LT(dets[1].popcnt(), 500);
+        ASSERT_GT(dets[2].popcnt(), 250);
+        ASSERT_LT(dets[2].popcnt(), 750);
+        ASSERT_GT(dets[3].popcnt(), 500);
+        ASSERT_LT(dets[3].popcnt(), 1000);
+        ASSERT_EQ(dets[4].popcnt(), dets[4].num_bits_padded());
+
+        ASSERT_EQ(dets[1], obs[0]);
+        ASSERT_EQ(dets[4], dets[5]);
+    }
+})
+

@@ -20,6 +20,7 @@
 #include <random>
 
 #include "stim/circuit/circuit.h"
+#include "stim/dem/detector_error_model.h"
 #include "stim/io/stim_data_formats.h"
 #include "stim/mem/simd_bit_table.h"
 
@@ -48,6 +49,26 @@ namespace stim {
 template <size_t W>
 std::pair<simd_bit_table<W>, simd_bit_table<W>> sample_batch_detection_events(
     const Circuit &circuit, size_t num_shots, std::mt19937_64 &rng);
+
+/// Samples detection events and observable flips from a detector error model.
+///
+/// This is a fast statistical sampling method. It does NOT perform a full circuit
+/// simulation. Instead, it iterates through the error mechanisms in the detector
+/// error model, randomly deciding if each one occurs, and aggregates the results.
+///
+/// Args:
+///     dem: The dem to sample.
+///     num_shots: The number of samples to take.
+///     rng: Random number generator to use.
+///
+/// Returns:
+///     A pair of simd_bit_tables. The first is the detection event data. The second is the
+///     observable data. Each table is arranged as follows:
+///         major axis (first index): detector index (or observable index)
+///         minor axis (second index): shot index
+template <size_t W>
+std::pair<simd_bit_table<W>, simd_bit_table<W>> sample_batch_detection_events(
+    const DetectorErrorModel &dem, size_t num_shots, std::mt19937_64 &rng);
 
 /// Samples detection events from a circuit and writes them to a file.
 ///

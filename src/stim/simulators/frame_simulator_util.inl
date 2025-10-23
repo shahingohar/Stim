@@ -15,6 +15,7 @@
 #include "stim/simulators/force_streaming.h"
 #include "stim/simulators/frame_simulator.h"
 #include "stim/simulators/frame_simulator_util.h"
+#include "stim/simulators/dem_sampler.h"
 
 namespace stim {
 
@@ -32,6 +33,15 @@ std::pair<simd_bit_table<W>, simd_bit_table<W>> sample_batch_detection_events(
         std::move(sim.det_record.storage),
         std::move(sim.obs_record),
     };
+}
+
+template <size_t W>
+std::pair<simd_bit_table<W>, simd_bit_table<W>> sample_batch_detection_events(
+    const DetectorErrorModel &dem, size_t num_shots, std::mt19937_64 &rng) {
+    DemSampler<W> sampler(dem, std::move(rng), num_shots);
+    sampler.resample(false);
+    rng = std::move(sampler.rng);
+    return {std::move(sampler.det_buffer), std::move(sampler.obs_buffer)};
 }
 
 template <size_t W>
